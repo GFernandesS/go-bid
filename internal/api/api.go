@@ -10,6 +10,8 @@ import (
 	"github.com/alexedwards/scs/pgxstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,8 +19,11 @@ type Api struct {
 	Router         *chi.Mux
 	UserService    services.UserService
 	ProductService services.ProductsService
+	BidsService    services.BidsService
 	Sessions       *scs.SessionManager
 	pool           *pgxpool.Pool
+	wsUpgrader     *websocket.Upgrader
+	AuctionLobby   services.AuctionLobby
 }
 
 func GetApi(ctx context.Context) (*Api, error) {
@@ -41,7 +46,16 @@ func GetApi(ctx context.Context) (*Api, error) {
 		Router:         router,
 		UserService:    services.NewUserService(pgPool),
 		ProductService: services.NewProductsService(pgPool),
+		BidsService:    services.NewBidsService(pgPool),
 		Sessions:       s,
+		wsUpgrader: &websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
+		AuctionLobby: services.AuctionLobby{
+			Rooms: make(map[uuid.UUID]*services.AuctionRoom),
+		},
 	}, nil
 }
 

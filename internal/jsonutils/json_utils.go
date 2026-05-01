@@ -20,9 +20,15 @@ func EncodeJson[T any](w http.ResponseWriter, r *http.Request, statusCode int, d
 	return nil
 }
 
-func EncodeInternalError(w http.ResponseWriter, r *http.Request) {
+func EncodeInternalError(w http.ResponseWriter, r *http.Request, customMessage ...string) {
+	message := "unexpected error"
+
+	if len(customMessage) > 0 {
+		message = customMessage[0]
+	}
+
 	_ = EncodeJson(w, r, http.StatusInternalServerError, map[string]any{
-		"error": "unexpected error",
+		"message": message,
 	})
 }
 

@@ -21,7 +21,7 @@ func (api *Api) BindRoutes() {
 	api.Router.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
 			if configuration.ShouldUseCSRFToken() {
-				r.Get("/csrftoken", api.HandleGetCSRFToken)
+				r.Get("/csrftoken", api.handleGetCSRFToken)
 			}
 
 			r.Route("/users", func(r chi.Router) {
@@ -37,8 +37,10 @@ func (api *Api) BindRoutes() {
 				r.Group(func(r chi.Router) {
 					r.Use(api.AuthMiddleware)
 
-					r.Post("/", api.HandleCreateProduct)
-					r.Get("/", api.HandleGetProducts)
+					r.Get("/subscribe/{product_id}", api.handleSubscribeUserToAuction)
+
+					r.Post("/", api.handleCreateProduct)
+					r.Get("/", api.handleGetProducts)
 				})
 			})
 		})

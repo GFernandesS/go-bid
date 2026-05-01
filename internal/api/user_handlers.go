@@ -71,7 +71,7 @@ func (api *Api) handleLoginUser(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	api.Sessions.Put(r.Context(), "AuthenticatedUserId", id)
+	api.Sessions.Put(r.Context(), AuthenticatedUserSessionKey, id)
 
 	_ = jsonutils.EncodeJson(w, r, http.StatusNoContent, map[string]any{})
 }
@@ -88,7 +88,7 @@ func (api *Api) handleLogoutUser(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	api.Sessions.Remove(r.Context(), "AuthenticatedUserId")
+	api.Sessions.Remove(r.Context(), AuthenticatedUserSessionKey)
 
 	_ = jsonutils.EncodeJson(w, r, http.StatusNoContent, map[string]any{})
 }

@@ -1,15 +1,17 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
 	"github.com/GFernandesS/go-bid/internal/jsonutils"
+	"github.com/GFernandesS/go-bid/internal/services"
 	"github.com/GFernandesS/go-bid/internal/usecase/products"
 	"github.com/google/uuid"
 )
 
-func (api *Api) HandleCreateProduct(w http.ResponseWriter, r *http.Request) {
+func (api *Api) handleCreateProduct(w http.ResponseWriter, r *http.Request) {
 	content, problems, err := jsonutils.DecodeValidJson[products.CreateProductRequest](r)
 
 	if err != nil {
@@ -18,7 +20,7 @@ func (api *Api) HandleCreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, ok := api.Sessions.Get(r.Context(), "AuthenticatedUserId").(uuid.UUID)
+	userId, ok := api.Sessions.Get(r.Context(), AuthenticatedUserSessionKey).(uuid.UUID)
 
 	if !ok {
 		jsonutils.EncodeInternalError(w, r)
@@ -35,13 +37,15 @@ func (api *Api) HandleCreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	createAuctionRoom(content, id, api)
+
 	_ = jsonutils.EncodeJson(w, r, http.StatusCreated, map[string]any{
-		"message": "product created successfully",
+		"message": "auction has started with success",
 		"id":      id,
 	})
 }
 
-func (api *Api) HandleGetProducts(w http.ResponseWriter, r *http.Request) {
+func (api *Api) handleGetProducts(w http.ResponseWriter, r *http.Request) {
 	rows, err := api.ProductService.ListProducts(r.Context())
 
 	if err != nil {
@@ -55,4 +59,14 @@ func (api *Api) HandleGetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = jsonutils.EncodeJson(w, r, http.StatusOK, rows)
+}
+
+func createAuctionRoom(req products.CreateProductRequest, productId uuid.UUID, api *Api) {
+	auctionContext, _ := context.WithDeadline(context.Background(), req.AuctionEnd)
+
+	auctionRoom := services.NewAuctionRoom(auctionContext, productId, &api.BidsService)
+
+	api.AuctionLobby.AddRoom(auctionRoom)
+
+	go auctionRoom.Run()
 }
